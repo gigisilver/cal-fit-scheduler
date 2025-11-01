@@ -19,11 +19,15 @@ export const WorkoutSummary = () => {
   useEffect(() => {
     // Check if calendar is already connected
     const checkConnection = async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('google_calendar_connection')
         .select('id')
         .limit(1)
-        .single();
+        .maybeSingle();
+
+      if (error) {
+        console.warn('Calendar connection check error:', error.message);
+      }
       
       if (data) {
         setIsConnected(true);
