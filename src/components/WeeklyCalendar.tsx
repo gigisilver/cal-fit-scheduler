@@ -1,0 +1,125 @@
+import { Card } from "@/components/ui/card";
+import { Calendar, Clock, Dumbbell } from "lucide-react";
+
+interface TimeSlot {
+  day: string;
+  date: string;
+  events: { time: string; title: string; duration: number }[];
+  recommendedWorkout?: { time: string; duration: number };
+}
+
+const mockWeekData: TimeSlot[] = [
+  {
+    day: "Monday",
+    date: "Nov 4",
+    events: [
+      { time: "09:00", title: "Team Meeting", duration: 60 },
+      { time: "14:00", title: "Project Review", duration: 90 },
+    ],
+    recommendedWorkout: { time: "11:00", duration: 90 },
+  },
+  {
+    day: "Tuesday",
+    date: "Nov 5",
+    events: [
+      { time: "10:00", title: "Client Call", duration: 45 },
+      { time: "15:00", title: "Workshop", duration: 120 },
+    ],
+  },
+  {
+    day: "Wednesday",
+    date: "Nov 6",
+    events: [
+      { time: "09:30", title: "Sprint Planning", duration: 90 },
+    ],
+    recommendedWorkout: { time: "13:00", duration: 90 },
+  },
+  {
+    day: "Thursday",
+    date: "Nov 7",
+    events: [
+      { time: "11:00", title: "Design Review", duration: 60 },
+      { time: "16:00", title: "1-on-1", duration: 30 },
+    ],
+  },
+  {
+    day: "Friday",
+    date: "Nov 8",
+    events: [
+      { time: "10:00", title: "All Hands", duration: 60 },
+    ],
+    recommendedWorkout: { time: "14:00", duration: 90 },
+  },
+  {
+    day: "Saturday",
+    date: "Nov 9",
+    events: [],
+    recommendedWorkout: { time: "10:00", duration: 90 },
+  },
+  {
+    day: "Sunday",
+    date: "Nov 10",
+    events: [
+      { time: "11:00", title: "Brunch", duration: 120 },
+    ],
+  },
+];
+
+export const WeeklyCalendar = () => {
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Calendar className="h-6 w-6 text-primary" />
+          <h2 className="text-2xl font-bold">Your Week</h2>
+        </div>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Clock className="h-4 w-4" />
+          <span>Nov 4 - Nov 10, 2025</span>
+        </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-7">
+        {mockWeekData.map((slot) => (
+          <Card
+            key={slot.day}
+            className="p-4 space-y-3 hover:shadow-[var(--shadow-card)] transition-shadow"
+          >
+            <div className="space-y-1">
+              <h3 className="font-semibold text-sm">{slot.day}</h3>
+              <p className="text-xs text-muted-foreground">{slot.date}</p>
+            </div>
+
+            <div className="space-y-2">
+              {slot.events.map((event, idx) => (
+                <div
+                  key={idx}
+                  className="p-2 rounded-md bg-secondary text-xs space-y-1"
+                >
+                  <div className="font-medium">{event.time}</div>
+                  <div className="text-muted-foreground">{event.title}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {event.duration}min
+                  </div>
+                </div>
+              ))}
+
+              {slot.recommendedWorkout && (
+                <div className="p-3 rounded-md bg-[var(--gradient-primary)] text-primary-foreground space-y-1 animate-pulse">
+                  <div className="flex items-center gap-2">
+                    <Dumbbell className="h-4 w-4" />
+                    <span className="font-semibold text-xs">Recommended</span>
+                  </div>
+                  <div className="font-medium">{slot.recommendedWorkout.time}</div>
+                  <div className="text-xs opacity-90">
+                    {slot.recommendedWorkout.duration}min workout
+                  </div>
+                </div>
+              )}
+            </div>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+};
