@@ -12,7 +12,11 @@ const recommendations = [
   { day: "Saturday", time: "10:00 AM", duration: "1h 30m" },
 ];
 
-export const WorkoutSummary = () => {
+interface WorkoutSummaryProps {
+  onConnectionChange?: (connected: boolean) => void;
+}
+
+export const WorkoutSummary = ({ onConnectionChange }: WorkoutSummaryProps) => {
   const [isConnecting, setIsConnecting] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
 
@@ -29,16 +33,18 @@ export const WorkoutSummary = () => {
         console.warn('Calendar connection check error:', error.message);
       }
       
-      if (data) {
-        setIsConnected(true);
-      }
+      const connected = !!data;
+      setIsConnected(connected);
+      onConnectionChange?.(connected);
     };
     checkConnection();
 
     // Check for successful connection callback
     const params = new URLSearchParams(window.location.search);
     if (params.get('calendar_connected') === 'true') {
-      setIsConnected(true);
+      const connected = true;
+      setIsConnected(connected);
+      onConnectionChange?.(connected);
       toast({
         title: "Calendar connected!",
         description: "Your Google Calendar has been successfully linked.",
@@ -46,7 +52,7 @@ export const WorkoutSummary = () => {
       // Clean up URL
       window.history.replaceState({}, '', window.location.pathname);
     }
-  }, []);
+  }, [onConnectionChange]);
 
   const handleConnectCalendar = () => {
     setIsConnecting(true);

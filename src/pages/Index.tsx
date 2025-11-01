@@ -2,8 +2,13 @@ import { WeeklyCalendar } from "@/components/WeeklyCalendar";
 import { WorkoutSummary } from "@/components/WorkoutSummary";
 import { Dumbbell } from "lucide-react";
 import heroImage from "@/assets/hero-gym.jpg";
+import { useState } from "react";
+import { useCalendarEvents } from "@/hooks/useCalendarEvents";
 
 const Index = () => {
+  const [isCalendarConnected, setIsCalendarConnected] = useState(false);
+  const { events } = useCalendarEvents(isCalendarConnected);
+
   return (
     <div className="min-h-screen bg-[var(--gradient-hero)]">
       {/* Hero Section */}
@@ -44,10 +49,10 @@ const Index = () => {
       <main className="container mx-auto px-4 pb-12 space-y-8">
         <div className="grid gap-8 lg:grid-cols-3">
           <div className="lg:col-span-2">
-            <WeeklyCalendar />
+            <WeeklyCalendar calendarEvents={events} />
           </div>
           <div className="lg:col-span-1">
-            <WorkoutSummary />
+            <WorkoutSummary onConnectionChange={setIsCalendarConnected} />
           </div>
         </div>
 

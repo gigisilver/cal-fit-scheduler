@@ -1,11 +1,17 @@
 import { Card } from "@/components/ui/card";
 import { Calendar, Clock, Dumbbell } from "lucide-react";
+import { CalendarEvent } from "@/hooks/useCalendarEvents";
+import { format, parseISO, startOfWeek, addDays, differenceInMinutes } from "date-fns";
 
 interface TimeSlot {
   day: string;
   date: string;
   events: { time: string; title: string; duration: number }[];
   recommendedWorkout?: { time: string; duration: number };
+}
+
+interface WeeklyCalendarProps {
+  calendarEvents?: CalendarEvent[];
 }
 
 const mockWeekData: TimeSlot[] = [
@@ -65,7 +71,47 @@ const mockWeekData: TimeSlot[] = [
   },
 ];
 
-export const WeeklyCalendar = () => {
+export const WeeklyCalendar = ({ calendarEvents = [] }: WeeklyCalendarProps) => {
+  // Generate week data from actual calendar events or use mock data
+  const generateWeekData = (): TimeSlot[] => {
+    const today = new Date();
+    const weekStart = startOfWeek(today, { weekStartsOn: 1 }); // Monday
+    
+    if (calendarEvents.length === 0) {
+      return mockWeekData;
+    }
+
+    return Array.from({ length: 7 }, (_, i) => {
+      const date = addDays(weekStart, i);
+      const dayEvents = calendarEvents
+        .filter(event => {
+          if (!event.start) return false;
+          const eventDate = parseISO(event.start);
+          return format(eventDate, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd');
+        })
+        .map(event => {
+          const start = parseISO(event.start);
+          const end = event.end ? parseISO(event.end) : start;
+          return {
+            time: format(start, 'HH:mm'),
+            title: event.summary || 'Untitled Event',
+            duration: differenceInMinutes(end, start),
+          };
+        })
+        .sort((a, b) => a.time.localeCompare(b.time));
+
+      return {
+        day: format(date, 'EEEE'),
+        date: format(date, 'MMM d'),
+        events: dayEvents,
+      };
+    });
+  };
+
+  const weekData = generateWeekData();
+  const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
+  const weekEnd = addDays(weekStart, 6);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -75,12 +121,12 @@ export const WeeklyCalendar = () => {
         </div>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Clock className="h-4 w-4" />
-          <span>Nov 4 - Nov 10, 2025</span>
+          <span>{format(weekStart, 'MMM d')} - {format(weekEnd, 'MMM d, yyyy')}</span>
         </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-7">
-        {mockWeekData.map((slot) => (
+        {weekData.map((slot) => (
           <Card
             key={slot.day}
             className="p-4 space-y-3 hover:shadow-[var(--shadow-card)] transition-shadow"
