@@ -64,7 +64,8 @@ export const WorkoutSummary = () => {
       `access_type=offline&` +
       `prompt=consent`;
     
-    window.location.href = authUrl;
+    // Open in new window to avoid iframe restrictions
+    window.open(authUrl, '_blank', 'width=500,height=600');
   };
 
   return (
