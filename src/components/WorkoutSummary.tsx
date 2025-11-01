@@ -1,6 +1,9 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar, CheckCircle2, TrendingUp } from "lucide-react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 const recommendations = [
   { day: "Monday", time: "11:00 AM", duration: "1h 30m" },
@@ -10,6 +13,56 @@ const recommendations = [
 ];
 
 export const WorkoutSummary = () => {
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
+
+  useEffect(() => {
+    // Check if calendar is already connected
+    const checkConnection = async () => {
+      const { data } = await supabase
+        .from('google_calendar_connection')
+        .select('id')
+        .limit(1)
+        .single();
+      
+      if (data) {
+        setIsConnected(true);
+      }
+    };
+    checkConnection();
+
+    // Check for successful connection callback
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('calendar_connected') === 'true') {
+      setIsConnected(true);
+      toast({
+        title: "Calendar connected!",
+        description: "Your Google Calendar has been successfully linked.",
+      });
+      // Clean up URL
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
+
+  const handleConnectCalendar = () => {
+    setIsConnecting(true);
+    
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '527176247821-hgkc2991uhmgkm1vt7dmqm5qvco3lslb.apps.googleusercontent.com';
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const redirectUri = `${supabaseUrl}/functions/v1/google-oauth-callback`;
+    const scope = 'https://www.googleapis.com/auth/calendar.readonly';
+    
+    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+      `client_id=${encodeURIComponent(clientId)}&` +
+      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+      `response_type=code&` +
+      `scope=${encodeURIComponent(scope)}&` +
+      `access_type=offline&` +
+      `prompt=consent`;
+    
+    window.location.href = authUrl;
+  };
+
   return (
     <Card className="p-6 space-y-6 shadow-[var(--shadow-card)]">
       <div className="flex items-start justify-between">
@@ -55,9 +108,15 @@ export const WorkoutSummary = () => {
           </span>
         </div>
 
-        <Button variant="hero" className="w-full" size="lg">
+        <Button 
+          variant="hero" 
+          className="w-full" 
+          size="lg"
+          onClick={handleConnectCalendar}
+          disabled={isConnecting || isConnected}
+        >
           <Calendar className="h-4 w-4" />
-          Connect Google Calendar
+          {isConnected ? 'Calendar Connected' : isConnecting ? 'Connecting...' : 'Connect Google Calendar'}
         </Button>
       </div>
     </Card>
