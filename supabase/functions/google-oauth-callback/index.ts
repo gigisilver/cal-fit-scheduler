@@ -14,6 +14,7 @@ Deno.serve(async (req) => {
     const url = new URL(req.url);
     const code = url.searchParams.get('code');
     const error = url.searchParams.get('error');
+    const state = url.searchParams.get('state');
 
     if (error) {
       console.error('OAuth error:', error);
@@ -92,11 +93,12 @@ Deno.serve(async (req) => {
     console.log('Tokens stored successfully');
 
     // Redirect back to the app with success
+    const redirectUrl = state ? decodeURIComponent(state) : url.origin;
     return new Response(null, {
       status: 302,
       headers: {
         ...corsHeaders,
-        'Location': `${url.origin}/?calendar_connected=true`,
+        'Location': `${redirectUrl}/?calendar_connected=true`,
       },
     });
 
