@@ -74,15 +74,14 @@ const mockWeekData: TimeSlot[] = [
 export const WeeklyCalendar = ({ calendarEvents = [] }: WeeklyCalendarProps) => {
   // Generate week data from actual calendar events or use mock data
   const generateWeekData = (): TimeSlot[] => {
-    const today = new Date();
-    const weekStart = startOfWeek(today, { weekStartsOn: 1 }); // Monday
+    const windowStart = new Date(); // rolling 7-day window from today
     
     if (calendarEvents.length === 0) {
       return mockWeekData;
     }
 
     return Array.from({ length: 7 }, (_, i) => {
-      const date = addDays(weekStart, i);
+      const date = addDays(windowStart, i);
       const dayEvents = calendarEvents
         .filter(event => {
           if (!event.start) return false;
@@ -109,8 +108,8 @@ export const WeeklyCalendar = ({ calendarEvents = [] }: WeeklyCalendarProps) => 
   };
 
   const weekData = generateWeekData();
-  const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
-  const weekEnd = addDays(weekStart, 6);
+  const windowStart = new Date();
+  const windowEnd = addDays(windowStart, 6);
 
   return (
     <div className="space-y-6">
@@ -121,7 +120,7 @@ export const WeeklyCalendar = ({ calendarEvents = [] }: WeeklyCalendarProps) => 
         </div>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Clock className="h-4 w-4" />
-          <span>{format(weekStart, 'MMM d')} - {format(weekEnd, 'MMM d, yyyy')}</span>
+          <span>{format(windowStart, 'MMM d')} - {format(windowEnd, 'MMM d, yyyy')}</span>
         </div>
       </div>
 
