@@ -54,7 +54,33 @@ export const WorkoutSummary = ({ onConnectionChange }: WorkoutSummaryProps) => {
     }
   }, [onConnectionChange]);
 
-  const handleConnectCalendar = () => {
+  const handleConnectCalendar = async () => {
+    // If already connected, clear the connection first
+    if (isConnected) {
+      const { error } = await supabase
+        .from('google_calendar_connection')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all rows
+      
+      if (error) {
+        console.error('Error clearing connection:', error);
+        toast({
+          title: "Error",
+          description: "Failed to clear connection. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      setIsConnected(false);
+      onConnectionChange?.(false);
+      toast({
+        title: "Calendar disconnected",
+        description: "You can now reconnect your calendar.",
+      });
+      return;
+    }
+    
     setIsConnecting(true);
     
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '527176247821-hgkc2991uhmgkm1vt7dmqm5qvco3lslb.apps.googleusercontent.com';
@@ -128,10 +154,10 @@ export const WorkoutSummary = ({ onConnectionChange }: WorkoutSummaryProps) => {
           className="w-full" 
           size="lg"
           onClick={handleConnectCalendar}
-          disabled={isConnecting || isConnected}
+          disabled={isConnecting}
         >
           <Calendar className="h-4 w-4" />
-          {isConnected ? 'Calendar Connected' : isConnecting ? 'Connecting...' : 'Connect Google Calendar'}
+          {isConnected ? 'Disconnect Calendar' : isConnecting ? 'Connecting...' : 'Connect Google Calendar'}
         </Button>
       </div>
     </Card>
