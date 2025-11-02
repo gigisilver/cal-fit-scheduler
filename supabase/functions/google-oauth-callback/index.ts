@@ -37,6 +37,27 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Extract user_id from state parameter
+    let userId: string | null = null;
+    if (state) {
+      try {
+        const stateData = JSON.parse(decodeURIComponent(state));
+        userId = stateData.user_id;
+      } catch (e) {
+        console.error('Failed to parse state:', e);
+      }
+    }
+
+    if (!userId) {
+      return new Response(
+        JSON.stringify({ error: 'User authentication required' }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 401 
+        }
+      );
+    }
+
     const clientId = Deno.env.get('GOOGLE_CLIENT_ID');
     const clientSecret = Deno.env.get('GOOGLE_CLIENT_SECRET');
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -77,9 +98,16 @@ Deno.serve(async (req) => {
     // Store tokens in database
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
+    // First, delete any existing connection for this user
+    await supabase
+      .from('google_calendar_connection')
+      .delete()
+      .eq('user_id', userId);
+    
     const { error: dbError } = await supabase
       .from('google_calendar_connection')
       .insert({
+        user_id: userId,
         access_token: tokens.access_token,
         refresh_token: tokens.refresh_token,
         token_expiry: tokenExpiry,
@@ -93,7 +121,8 @@ Deno.serve(async (req) => {
     console.log('Tokens stored successfully');
 
     // Redirect back to the app with success
-    const redirectUrl = state ? decodeURIComponent(state) : url.origin;
+    const stateData = state ? JSON.parse(decodeURIComponent(state)) : null;
+    const redirectUrl = stateData?.origin || url.origin;
     return new Response(null, {
       status: 302,
       headers: {
