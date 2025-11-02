@@ -1,22 +1,31 @@
 import { WeeklyCalendar } from "@/components/WeeklyCalendar";
 import { WorkoutSummary } from "@/components/WorkoutSummary";
-import { WorkoutPreferences } from "@/components/WorkoutPreferences";
-import { Dumbbell } from "lucide-react";
+import { Dumbbell, Settings } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import heroImage from "@/assets/hero-gym.jpg";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useCalendarEvents } from "@/hooks/useCalendarEvents";
+import { useNavigate } from "react-router-dom";
 import { format, parseISO, addDays, differenceInMinutes } from "date-fns";
 
 const Index = () => {
+  const navigate = useNavigate();
   const [isCalendarConnected, setIsCalendarConnected] = useState(false);
   const [preferredStartHour, setPreferredStartHour] = useState(10);
   const [preferredEndHour, setPreferredEndHour] = useState(20);
   const { events } = useCalendarEvents(isCalendarConnected);
 
-  const handlePreferencesChange = (startHour: number, endHour: number) => {
-    setPreferredStartHour(startHour);
-    setPreferredEndHour(endHour);
-  };
+  // Load preferences from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem("workoutPreferences");
+    if (saved) {
+      const { startTime, endTime } = JSON.parse(saved);
+      const [startHour] = startTime.split(':').map(Number);
+      const [endHour] = endTime.split(':').map(Number);
+      setPreferredStartHour(startHour);
+      setPreferredEndHour(endHour);
+    }
+  }, []);
 
   // Calculate workout recommendations from calendar events
   const recommendations = useMemo(() => {
@@ -99,14 +108,24 @@ const Index = () => {
       <header className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent" />
         <div className="container mx-auto px-4 py-12 relative">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 rounded-xl bg-[var(--gradient-primary)] flex items-center justify-center shadow-[var(--shadow-elegant)]">
-              <Dumbbell className="h-6 w-6 text-primary-foreground" />
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-[var(--gradient-primary)] flex items-center justify-center shadow-[var(--shadow-elegant)]">
+                <Dumbbell className="h-6 w-6 text-primary-foreground" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold tracking-tight">FitScheduler</h1>
+                <p className="text-sm text-muted-foreground">Smart workout scheduling</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">FitScheduler</h1>
-              <p className="text-sm text-muted-foreground">Smart workout scheduling</p>
-            </div>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => navigate("/settings")}
+              className="rounded-full"
+            >
+              <Settings className="h-5 w-5" />
+            </Button>
           </div>
 
           <div className="relative h-48 rounded-2xl overflow-hidden shadow-[var(--shadow-elegant)] mb-8">
@@ -131,8 +150,6 @@ const Index = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 pb-12 space-y-8">
-        <WorkoutPreferences onPreferencesChange={handlePreferencesChange} />
-        
         <div className="grid gap-8 lg:grid-cols-3">
           <div className="lg:col-span-2">
             <WeeklyCalendar calendarEvents={events} />
