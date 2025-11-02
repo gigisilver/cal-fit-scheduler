@@ -1,5 +1,6 @@
 import { WeeklyCalendar } from "@/components/WeeklyCalendar";
 import { WorkoutSummary } from "@/components/WorkoutSummary";
+import { WorkoutPreferences } from "@/components/WorkoutPreferences";
 import { Dumbbell } from "lucide-react";
 import heroImage from "@/assets/hero-gym.jpg";
 import { useState, useMemo } from "react";
@@ -8,7 +9,14 @@ import { format, parseISO, addDays, differenceInMinutes } from "date-fns";
 
 const Index = () => {
   const [isCalendarConnected, setIsCalendarConnected] = useState(false);
+  const [preferredStartHour, setPreferredStartHour] = useState(10);
+  const [preferredEndHour, setPreferredEndHour] = useState(20);
   const { events } = useCalendarEvents(isCalendarConnected);
+
+  const handlePreferencesChange = (startHour: number, endHour: number) => {
+    setPreferredStartHour(startHour);
+    setPreferredEndHour(endHour);
+  };
 
   // Calculate workout recommendations from calendar events
   const recommendations = useMemo(() => {
@@ -16,11 +24,10 @@ const Index = () => {
 
     const findWorkoutSlot = (date: Date, dayEvents: { time: string; duration: number }[]): { time: string; duration: number } | undefined => {
       const workoutDuration = 90;
-      const preferredSlots = [
-        { start: 6, end: 9 },
-        { start: 11, end: 14 },
-        { start: 16, end: 19 },
-      ];
+      
+      // Use user's preferred time window
+      const slotStart = preferredStartHour * 60;
+      const slotEnd = preferredEndHour * 60;
 
       const busyBlocks = dayEvents.map(e => {
         const [hours, minutes] = e.time.split(':').map(Number);
@@ -28,28 +35,25 @@ const Index = () => {
         return { start: startMinutes, end: startMinutes + e.duration };
       });
 
-      for (const slot of preferredSlots) {
-        const slotStart = slot.start * 60;
-        const slotEnd = slot.end * 60;
+      // Try to find a slot within user's preferred time window
+      for (let time = slotStart; time <= slotEnd - workoutDuration; time += 30) {
+        const workoutEnd = time + workoutDuration;
+        const hasConflict = busyBlocks.some(block => 
+          (time >= block.start && time < block.end) ||
+          (workoutEnd > block.start && workoutEnd <= block.end) ||
+          (time <= block.start && workoutEnd >= block.end)
+        );
         
-        for (let time = slotStart; time <= slotEnd - workoutDuration; time += 30) {
-          const workoutEnd = time + workoutDuration;
-          const hasConflict = busyBlocks.some(block => 
-            (time >= block.start && time < block.end) ||
-            (workoutEnd > block.start && workoutEnd <= block.end) ||
-            (time <= block.start && workoutEnd >= block.end)
-          );
-          
-          if (!hasConflict) {
-            const hours = Math.floor(time / 60);
-            const minutes = time % 60;
-            return {
-              time: `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`,
-              duration: workoutDuration,
-            };
-          }
+        if (!hasConflict) {
+          const hours = Math.floor(time / 60);
+          const minutes = time % 60;
+          return {
+            time: `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`,
+            duration: workoutDuration,
+          };
         }
       }
+      
       return undefined;
     };
 
@@ -87,7 +91,7 @@ const Index = () => {
     }
 
     return recs;
-  }, [events]);
+  }, [events, preferredStartHour, preferredEndHour]);
 
   return (
     <div className="min-h-screen bg-[var(--gradient-hero)]">
@@ -127,6 +131,8 @@ const Index = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 pb-12 space-y-8">
+        <WorkoutPreferences onPreferencesChange={handlePreferencesChange} />
+        
         <div className="grid gap-8 lg:grid-cols-3">
           <div className="lg:col-span-2">
             <WeeklyCalendar calendarEvents={events} />

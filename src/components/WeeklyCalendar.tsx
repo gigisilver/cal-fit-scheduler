@@ -75,11 +75,22 @@ export const WeeklyCalendar = ({ calendarEvents = [] }: WeeklyCalendarProps) => 
   // Find available workout slots avoiding conflicts
   const findWorkoutSlot = (date: Date, events: { time: string; duration: number }[]): { time: string; duration: number } | undefined => {
     const workoutDuration = 90; // 90 minute workout
-    const preferredSlots = [
-      { start: 6, end: 9 },   // Early morning
-      { start: 11, end: 14 }, // Midday
-      { start: 16, end: 19 }, // Late afternoon
-    ];
+    
+    // Load user preferences from localStorage
+    const saved = localStorage.getItem("workoutPreferences");
+    let preferredStartHour = 10; // default 10 AM
+    let preferredEndHour = 20;   // default 8 PM
+    
+    if (saved) {
+      const { startTime, endTime } = JSON.parse(saved);
+      const [startHour] = startTime.split(':').map(Number);
+      const [endHour] = endTime.split(':').map(Number);
+      preferredStartHour = startHour;
+      preferredEndHour = endHour;
+    }
+
+    const slotStart = preferredStartHour * 60;
+    const slotEnd = preferredEndHour * 60;
 
     // Convert events to time blocks (in minutes from midnight)
     const busyBlocks = events.map(e => {
@@ -91,32 +102,26 @@ export const WeeklyCalendar = ({ calendarEvents = [] }: WeeklyCalendarProps) => 
       };
     });
 
-    // Check each preferred slot
-    for (const slot of preferredSlots) {
-      const slotStart = slot.start * 60;
-      const slotEnd = slot.end * 60;
+    // Try to find a slot within user's preferred time window
+    for (let time = slotStart; time <= slotEnd - workoutDuration; time += 30) {
+      const workoutEnd = time + workoutDuration;
       
-      // Check if we can fit a workout in this slot
-      for (let time = slotStart; time <= slotEnd - workoutDuration; time += 30) {
-        const workoutEnd = time + workoutDuration;
-        
-        // Check if this time conflicts with any busy blocks
-        const hasConflict = busyBlocks.some(block => 
-          (time >= block.start && time < block.end) || // Workout starts during event
-          (workoutEnd > block.start && workoutEnd <= block.end) || // Workout ends during event
-          (time <= block.start && workoutEnd >= block.end) // Workout encompasses event
-        );
-        
-        if (!hasConflict) {
-          const hours = Math.floor(time / 60);
-          const minutes = time % 60;
-          const period = hours >= 12 ? 'PM' : 'AM';
-          const displayHours = hours % 12 || 12;
-          return {
-            time: `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`,
-            duration: workoutDuration,
-          };
-        }
+      // Check if this time conflicts with any busy blocks
+      const hasConflict = busyBlocks.some(block => 
+        (time >= block.start && time < block.end) || // Workout starts during event
+        (workoutEnd > block.start && workoutEnd <= block.end) || // Workout ends during event
+        (time <= block.start && workoutEnd >= block.end) // Workout encompasses event
+      );
+      
+      if (!hasConflict) {
+        const hours = Math.floor(time / 60);
+        const minutes = time % 60;
+        const period = hours >= 12 ? 'PM' : 'AM';
+        const displayHours = hours % 12 || 12;
+        return {
+          time: `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`,
+          duration: workoutDuration,
+        };
       }
     }
     
