@@ -14,7 +14,22 @@ Deno.serve(async (req) => {
     const url = new URL(req.url);
     const code = url.searchParams.get('code');
     const error = url.searchParams.get('error');
-    const state = url.searchParams.get('state');
+    const stateParam = url.searchParams.get('state');
+    
+    let redirectOrigin = url.origin;
+    let userAccessToken = null;
+    
+    // Parse state to get origin and access token
+    if (stateParam) {
+      try {
+        const stateData = JSON.parse(decodeURIComponent(stateParam));
+        redirectOrigin = stateData.origin || url.origin;
+        userAccessToken = stateData.accessToken;
+      } catch {
+        // Fallback to treating state as just the origin (backward compatibility)
+        redirectOrigin = decodeURIComponent(stateParam);
+      }
+    }
 
     if (error) {
       console.error('OAuth error:', error);
@@ -74,8 +89,20 @@ Deno.serve(async (req) => {
     const expiresIn = tokens.expires_in || 3600;
     const tokenExpiry = new Date(Date.now() + expiresIn * 1000).toISOString();
 
-    // Store tokens in database
+    // Store tokens in database with user context
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    
+    // Get user ID from the access token if provided
+    let userId = null;
+    if (userAccessToken) {
+      const { data: { user } } = await supabase.auth.getUser(userAccessToken);
+      userId = user?.id;
+    }
+    
+    if (!userId) {
+      console.error('No user ID available');
+      throw new Error('User authentication required');
+    }
     
     const { error: dbError } = await supabase
       .from('google_calendar_connection')
@@ -83,6 +110,7 @@ Deno.serve(async (req) => {
         access_token: tokens.access_token,
         refresh_token: tokens.refresh_token,
         token_expiry: tokenExpiry,
+        user_id: userId,
       });
 
     if (dbError) {
@@ -93,12 +121,11 @@ Deno.serve(async (req) => {
     console.log('Tokens stored successfully');
 
     // Redirect back to the app with success
-    const redirectUrl = state ? decodeURIComponent(state) : url.origin;
     return new Response(null, {
       status: 302,
       headers: {
         ...corsHeaders,
-        'Location': `${redirectUrl}/?calendar_connected=true`,
+        'Location': `${redirectOrigin}/?calendar_connected=true`,
       },
     });
 

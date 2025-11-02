@@ -81,6 +81,18 @@ export const WorkoutSummary = ({ recommendations = [], onConnectionChange }: Wor
       return;
     }
     
+    // Get the user's session to pass to OAuth
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      toast({
+        title: "Authentication required",
+        description: "Please log in first to connect your calendar.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsConnecting(true);
     
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '527176247821-hgkc2991uhmgkm1vt7dmqm5qvco3lslb.apps.googleusercontent.com';
@@ -88,8 +100,12 @@ export const WorkoutSummary = ({ recommendations = [], onConnectionChange }: Wor
     const redirectUri = `${supabaseUrl}/functions/v1/google-oauth-callback`;
     const scope = 'https://www.googleapis.com/auth/calendar.readonly';
     
-    // Pass the current origin so callback knows where to redirect
-    const state = encodeURIComponent(window.location.origin);
+    // Pass both origin and access token in state
+    const stateData = {
+      origin: window.location.origin,
+      accessToken: session.access_token
+    };
+    const state = encodeURIComponent(JSON.stringify(stateData));
     
     const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
       `client_id=${encodeURIComponent(clientId)}&` +
