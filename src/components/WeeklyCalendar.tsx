@@ -195,12 +195,13 @@ export const WeeklyCalendar = ({ calendarEvents = [] }: WeeklyCalendarProps) => 
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-7">
-        {weekData.map((slot) => (
-          <Card
-            key={slot.day}
-            className="p-4 space-y-3 hover:shadow-[var(--shadow-card)] transition-shadow"
-          >
+      <div className="overflow-x-auto">
+        <div className="grid grid-cols-7 gap-4 min-w-max">
+          {weekData.map((slot) => (
+            <Card
+              key={slot.day}
+              className="p-4 space-y-3 hover:shadow-[var(--shadow-card)] transition-shadow min-w-[150px]"
+            >
             <div className="space-y-1">
               <h3 className="font-semibold text-sm">{slot.day}</h3>
               <p className="text-xs text-muted-foreground">{slot.date}</p>
@@ -266,6 +267,7 @@ export const WeeklyCalendar = ({ calendarEvents = [] }: WeeklyCalendarProps) => 
           </Card>
         ))}
       </div>
+    </div>
     </div>
   );
 };
