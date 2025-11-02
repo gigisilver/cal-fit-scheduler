@@ -72,6 +72,55 @@ const mockWeekData: TimeSlot[] = [
 ];
 
 export const WeeklyCalendar = ({ calendarEvents = [] }: WeeklyCalendarProps) => {
+  // Find available workout slots avoiding conflicts
+  const findWorkoutSlot = (date: Date, events: { time: string; duration: number }[]): { time: string; duration: number } | undefined => {
+    const workoutDuration = 90; // 90 minute workout
+    const preferredSlots = [
+      { start: 6, end: 9 },   // Early morning
+      { start: 11, end: 14 }, // Midday
+      { start: 16, end: 19 }, // Late afternoon
+    ];
+
+    // Convert events to time blocks (in minutes from midnight)
+    const busyBlocks = events.map(e => {
+      const [hours, minutes] = e.time.split(':').map(Number);
+      const startMinutes = hours * 60 + minutes;
+      return {
+        start: startMinutes,
+        end: startMinutes + e.duration,
+      };
+    });
+
+    // Check each preferred slot
+    for (const slot of preferredSlots) {
+      const slotStart = slot.start * 60;
+      const slotEnd = slot.end * 60;
+      
+      // Check if we can fit a workout in this slot
+      for (let time = slotStart; time <= slotEnd - workoutDuration; time += 30) {
+        const workoutEnd = time + workoutDuration;
+        
+        // Check if this time conflicts with any busy blocks
+        const hasConflict = busyBlocks.some(block => 
+          (time >= block.start && time < block.end) || // Workout starts during event
+          (workoutEnd > block.start && workoutEnd <= block.end) || // Workout ends during event
+          (time <= block.start && workoutEnd >= block.end) // Workout encompasses event
+        );
+        
+        if (!hasConflict) {
+          const hours = Math.floor(time / 60);
+          const minutes = time % 60;
+          return {
+            time: `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`,
+            duration: workoutDuration,
+          };
+        }
+      }
+    }
+    
+    return undefined;
+  };
+
   // Generate week data from actual calendar events or use mock data
   const generateWeekData = (): TimeSlot[] => {
     const windowStart = new Date(); // rolling 7-day window from today
@@ -99,10 +148,14 @@ export const WeeklyCalendar = ({ calendarEvents = [] }: WeeklyCalendarProps) => 
         })
         .sort((a, b) => a.time.localeCompare(b.time));
 
+      // Find available workout slot for this day
+      const workoutSlot = findWorkoutSlot(date, dayEvents);
+
       return {
         day: format(date, 'EEEE'),
         date: format(date, 'MMM d'),
         events: dayEvents,
+        recommendedWorkout: workoutSlot,
       };
     });
   };
