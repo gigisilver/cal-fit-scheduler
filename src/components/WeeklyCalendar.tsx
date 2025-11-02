@@ -238,7 +238,7 @@ export const WeeklyCalendar = ({ calendarEvents = [] }: WeeklyCalendarProps) => 
                   item.isWorkout ? (
                     <div 
                       key={`workout-${idx}`}
-                      className="p-3 rounded-md bg-accent text-accent-foreground space-y-1 border-2 border-accent"
+                      className="p-3 rounded-md bg-primary/10 border-2 border-primary text-primary space-y-1"
                     >
                       <div className="flex items-center gap-2">
                         <Dumbbell className="h-4 w-4" />
