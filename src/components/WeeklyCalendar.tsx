@@ -139,15 +139,18 @@ export const WeeklyCalendar = ({ calendarEvents = [] }: WeeklyCalendarProps) => 
     return undefined;
   };
 
-  // Generate week data from actual calendar events or use mock data
+  // Generate week data from actual calendar events or use mock data (only 4 non-consecutive workout days)
   const generateWeekData = (): TimeSlot[] => {
-    const windowStart = new Date(); // rolling 7-day window from today
+    const windowStart = new Date();
     
     if (calendarEvents.length === 0) {
       return mockWeekData;
     }
 
-    return Array.from({ length: 7 }, (_, i) => {
+    const allDaysWithSlots = [];
+
+    // First, generate all days with available slots
+    for (let i = 0; i < 7; i++) {
       const date = addDays(windowStart, i);
       const dayEvents = calendarEvents
         .filter(event => {
@@ -166,16 +169,37 @@ export const WeeklyCalendar = ({ calendarEvents = [] }: WeeklyCalendarProps) => 
         })
         .sort((a, b) => a.time.localeCompare(b.time));
 
-      // Find available workout slot for this day
-      const workoutSlot = findWorkoutSlot(date, dayEvents);
-
-      return {
+      const workoutSlot = findWorkoutSlot(date, dayEvents.map(e => ({ time: e.time, duration: e.duration })));
+      
+      allDaysWithSlots.push({
         day: format(date, 'EEEE'),
         date: format(date, 'MMM d'),
         events: dayEvents,
         recommendedWorkout: workoutSlot,
-      };
-    });
+        dayIndex: i,
+      });
+    }
+
+    // Select 4 non-consecutive days with workout recommendations
+    const selectedWorkoutDays = new Set<number>();
+    for (let i = 0; i < allDaysWithSlots.length; i++) {
+      if (allDaysWithSlots[i].recommendedWorkout) {
+        const isConsecutive = Array.from(selectedWorkoutDays).some(
+          selectedDay => Math.abs(selectedDay - i) === 1
+        );
+        
+        if (!isConsecutive) {
+          selectedWorkoutDays.add(i);
+          if (selectedWorkoutDays.size === 4) break;
+        }
+      }
+    }
+
+    // Remove workout recommendations from non-selected days
+    return allDaysWithSlots.map((day, idx) => ({
+      ...day,
+      recommendedWorkout: selectedWorkoutDays.has(idx) ? day.recommendedWorkout : undefined,
+    }));
   };
 
   const weekData = generateWeekData();
