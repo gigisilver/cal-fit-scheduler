@@ -14,62 +14,15 @@ interface WeeklyCalendarProps {
   calendarEvents?: CalendarEvent[];
 }
 
-const mockWeekData: TimeSlot[] = [
-  {
-    day: "Monday",
-    date: "Nov 4",
-    events: [
-      { time: "09:00", title: "Team Meeting", duration: 60 },
-      { time: "14:00", title: "Project Review", duration: 90 },
-    ],
-    recommendedWorkout: { time: "11:00", duration: 90 },
-  },
-  {
-    day: "Tuesday",
-    date: "Nov 5",
-    events: [
-      { time: "10:00", title: "Client Call", duration: 45 },
-      { time: "15:00", title: "Workshop", duration: 120 },
-    ],
-  },
-  {
-    day: "Wednesday",
-    date: "Nov 6",
-    events: [
-      { time: "09:30", title: "Sprint Planning", duration: 90 },
-    ],
-    recommendedWorkout: { time: "13:00", duration: 90 },
-  },
-  {
-    day: "Thursday",
-    date: "Nov 7",
-    events: [
-      { time: "11:00", title: "Design Review", duration: 60 },
-      { time: "16:00", title: "1-on-1", duration: 30 },
-    ],
-  },
-  {
-    day: "Friday",
-    date: "Nov 8",
-    events: [
-      { time: "10:00", title: "All Hands", duration: 60 },
-    ],
-    recommendedWorkout: { time: "14:00", duration: 90 },
-  },
-  {
-    day: "Saturday",
-    date: "Nov 9",
+const mockWeekData: TimeSlot[] = Array.from({ length: 7 }, (_, i) => {
+  const date = addDays(new Date(), i);
+  return {
+    day: format(date, 'EEEE'),
+    date: format(date, 'MMM d'),
     events: [],
-    recommendedWorkout: { time: "10:00", duration: 90 },
-  },
-  {
-    day: "Sunday",
-    date: "Nov 10",
-    events: [
-      { time: "11:00", title: "Brunch", duration: 120 },
-    ],
-  },
-];
+    recommendedWorkout: i % 2 === 0 && i < 6 ? { time: '10:00 AM', duration: 90 } : undefined,
+  };
+});
 
 export const WeeklyCalendar = ({ calendarEvents = [] }: WeeklyCalendarProps) => {
   // Find available workout slots avoiding conflicts
