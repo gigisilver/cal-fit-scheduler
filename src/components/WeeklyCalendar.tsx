@@ -189,31 +189,47 @@ export const WeeklyCalendar = ({ calendarEvents = [] }: WeeklyCalendarProps) => 
             </div>
 
             <div className="space-y-2">
-              {slot.events.map((event, idx) => (
-                <div
-                  key={idx}
-                  className="p-2 rounded-md bg-secondary text-xs space-y-1"
-                >
-                  <div className="font-medium">{event.time}</div>
-                  <div className="text-muted-foreground">{event.title}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {event.duration}min
-                  </div>
-                </div>
-              ))}
+              {(() => {
+                // Merge events and workout recommendation, then sort by time
+                const allItems = [
+                  ...slot.events.map(e => ({ ...e, isWorkout: false })),
+                  ...(slot.recommendedWorkout ? [{ 
+                    time: slot.recommendedWorkout.time, 
+                    title: 'Workout', 
+                    duration: slot.recommendedWorkout.duration,
+                    isWorkout: true 
+                  }] : [])
+                ].sort((a, b) => a.time.localeCompare(b.time));
 
-              {slot.recommendedWorkout && (
-                <div className="p-3 rounded-md bg-accent text-accent-foreground space-y-1 border-2 border-accent">
-                  <div className="flex items-center gap-2">
-                    <Dumbbell className="h-4 w-4" />
-                    <span className="font-semibold text-xs">Recommended</span>
-                  </div>
-                  <div className="font-medium">{slot.recommendedWorkout.time}</div>
-                  <div className="text-xs opacity-90">
-                    {slot.recommendedWorkout.duration}min workout
-                  </div>
-                </div>
-              )}
+                return allItems.map((item, idx) => 
+                  item.isWorkout ? (
+                    <div 
+                      key={`workout-${idx}`}
+                      className="p-3 rounded-md bg-accent text-accent-foreground space-y-1 border-2 border-accent"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Dumbbell className="h-4 w-4" />
+                        <span className="font-semibold text-xs">Recommended</span>
+                      </div>
+                      <div className="font-medium">{item.time}</div>
+                      <div className="text-xs opacity-90">
+                        {item.duration}min workout
+                      </div>
+                    </div>
+                  ) : (
+                    <div
+                      key={`event-${idx}`}
+                      className="p-2 rounded-md bg-secondary text-xs space-y-1"
+                    >
+                      <div className="font-medium">{item.time}</div>
+                      <div className="text-muted-foreground">{item.title}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {item.duration}min
+                      </div>
+                    </div>
+                  )
+                );
+              })()}
             </div>
           </Card>
         ))}
