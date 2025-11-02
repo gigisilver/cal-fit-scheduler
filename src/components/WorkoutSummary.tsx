@@ -55,6 +55,14 @@ export const WorkoutSummary = ({ recommendations = [], onConnectionChange }: Wor
   }, [onConnectionChange]);
 
   const handleConnectCalendar = async () => {
+    // Get current user session
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) {
+      // Redirect to auth page instead of showing error
+      window.location.href = '/auth';
+      return;
+    }
+
     // If already connected, clear the connection first
     if (isConnected) {
       const { error } = await supabase
@@ -82,18 +90,6 @@ export const WorkoutSummary = ({ recommendations = [], onConnectionChange }: Wor
     }
     
     setIsConnecting(true);
-    
-    // Get current user session
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user) {
-      toast({
-        title: "Authentication required",
-        description: "Please sign in to connect your calendar.",
-        variant: "destructive",
-      });
-      setIsConnecting(false);
-      return;
-    }
     
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '527176247821-hgkc2991uhmgkm1vt7dmqm5qvco3lslb.apps.googleusercontent.com';
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
