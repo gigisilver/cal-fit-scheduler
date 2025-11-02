@@ -109,40 +109,22 @@ const Index = () => {
       <header className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent" />
         <div className="container mx-auto px-4 py-12 relative">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => navigate("/settings")}
+                className="rounded-full"
+              >
+                <Settings className="h-5 w-5" />
+              </Button>
               <div className="w-12 h-12 rounded-xl bg-[var(--gradient-primary)] flex items-center justify-center shadow-[var(--shadow-elegant)]">
                 <Dumbbell className="h-6 w-6 text-primary-foreground" />
               </div>
               <div>
                 <h1 className="text-3xl font-bold tracking-tight">FitScheduler</h1>
                 <p className="text-sm text-muted-foreground">Smart workout scheduling</p>
-              </div>
-            </div>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => navigate("/settings")}
-              className="rounded-full"
-            >
-              <Settings className="h-5 w-5" />
-            </Button>
-          </div>
-
-          <div className="relative h-48 rounded-2xl overflow-hidden shadow-[var(--shadow-elegant)] mb-8">
-            <img
-              src={heroImage}
-              alt="Modern gym environment"
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-primary/80 to-accent/60 flex items-center justify-center">
-              <div className="text-center text-white space-y-2">
-                <h2 className="text-2xl md:text-4xl font-bold">
-                  Find Your Perfect Workout Times
-                </h2>
-                <p className="text-sm md:text-lg opacity-90">
-                  AI-powered scheduling that fits your life
-                </p>
               </div>
             </div>
           </div>
