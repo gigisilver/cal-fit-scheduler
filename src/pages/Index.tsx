@@ -47,10 +47,11 @@ const Index = () => {
       // Try to find a slot within user's preferred time window
       for (let time = slotStart; time <= slotEnd - workoutDuration; time += 30) {
         const workoutEnd = time + workoutDuration;
+        
+        // Check if workout overlaps with any event
+        // Overlap occurs if: workout starts before event ends AND workout ends after event starts
         const hasConflict = busyBlocks.some(block => 
-          (time >= block.start && time < block.end) ||
-          (workoutEnd > block.start && workoutEnd <= block.end) ||
-          (time <= block.start && workoutEnd >= block.end)
+          time < block.end && workoutEnd > block.start
         );
         
         if (!hasConflict) {

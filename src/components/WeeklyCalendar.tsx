@@ -106,11 +106,10 @@ export const WeeklyCalendar = ({ calendarEvents = [] }: WeeklyCalendarProps) => 
     for (let time = slotStart; time <= slotEnd - workoutDuration; time += 30) {
       const workoutEnd = time + workoutDuration;
       
-      // Check if this time conflicts with any busy blocks
+      // Check if workout overlaps with any event
+      // Overlap occurs if: workout starts before event ends AND workout ends after event starts
       const hasConflict = busyBlocks.some(block => 
-        (time >= block.start && time < block.end) || // Workout starts during event
-        (workoutEnd > block.start && workoutEnd <= block.end) || // Workout ends during event
-        (time <= block.start && workoutEnd >= block.end) // Workout encompasses event
+        time < block.end && workoutEnd > block.start
       );
       
       if (!hasConflict) {
