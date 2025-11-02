@@ -12,6 +12,9 @@ interface TimeSlot {
 
 interface WeeklyCalendarProps {
   calendarEvents?: CalendarEvent[];
+  loading?: boolean;
+  error?: string | null;
+  isConnected?: boolean;
 }
 
 const mockWeekData: TimeSlot[] = [
@@ -71,7 +74,7 @@ const mockWeekData: TimeSlot[] = [
   },
 ];
 
-export const WeeklyCalendar = ({ calendarEvents = [] }: WeeklyCalendarProps) => {
+export const WeeklyCalendar = ({ calendarEvents = [], loading = false, error = null, isConnected = false }: WeeklyCalendarProps) => {
   // Find available workout slots avoiding conflicts
   const findWorkoutSlot = (date: Date, events: { time: string; duration: number }[]): { time: string; duration: number } | undefined => {
     const workoutDuration = 90; // 90 minute workout
@@ -139,13 +142,9 @@ export const WeeklyCalendar = ({ calendarEvents = [] }: WeeklyCalendarProps) => 
     return undefined;
   };
 
-  // Generate week data from actual calendar events or use mock data
+  // Generate week data from actual calendar events
   const generateWeekData = (): TimeSlot[] => {
     const windowStart = new Date(); // rolling 7-day window from today
-    
-    if (calendarEvents.length === 0) {
-      return mockWeekData;
-    }
 
     return Array.from({ length: 7 }, (_, i) => {
       const date = addDays(windowStart, i);
@@ -178,9 +177,48 @@ export const WeeklyCalendar = ({ calendarEvents = [] }: WeeklyCalendarProps) => 
     });
   };
 
-  const weekData = generateWeekData();
   const windowStart = new Date();
   const windowEnd = addDays(windowStart, 6);
+
+  // Show loading state
+  if (loading) {
+    return (
+      <Card className="p-12 text-center space-y-4">
+        <Clock className="h-12 w-12 mx-auto text-muted-foreground animate-pulse" />
+        <p className="text-muted-foreground">Loading your calendar...</p>
+      </Card>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <Card className="p-12 text-center space-y-4 border-destructive/50">
+        <Calendar className="h-12 w-12 mx-auto text-destructive" />
+        <div className="space-y-2">
+          <h3 className="font-semibold text-destructive">Calendar Error</h3>
+          <p className="text-sm text-muted-foreground">{error}</p>
+        </div>
+      </Card>
+    );
+  }
+
+  // Show not connected state
+  if (!isConnected) {
+    return (
+      <Card className="p-12 text-center space-y-4">
+        <Calendar className="h-12 w-12 mx-auto text-muted-foreground" />
+        <div className="space-y-2">
+          <h3 className="font-semibold">Connect Your Calendar</h3>
+          <p className="text-sm text-muted-foreground">
+            Link your Google Calendar to see your schedule and get personalized workout recommendations
+          </p>
+        </div>
+      </Card>
+    );
+  }
+
+  const weekData = generateWeekData();
 
   return (
     <div className="space-y-6">

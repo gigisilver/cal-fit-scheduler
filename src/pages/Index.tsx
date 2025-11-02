@@ -13,7 +13,7 @@ const Index = () => {
   const [isCalendarConnected, setIsCalendarConnected] = useState(false);
   const [preferredStartHour, setPreferredStartHour] = useState(10);
   const [preferredEndHour, setPreferredEndHour] = useState(20);
-  const { events } = useCalendarEvents(isCalendarConnected);
+  const { events, loading, error } = useCalendarEvents(isCalendarConnected);
 
   // Load preferences from localStorage on mount
   useEffect(() => {
@@ -135,7 +135,12 @@ const Index = () => {
       <main className="container mx-auto px-4 pb-12 space-y-8">
         <div className="grid gap-8 lg:grid-cols-3">
           <div className="lg:col-span-2">
-            <WeeklyCalendar calendarEvents={events} />
+            <WeeklyCalendar 
+              calendarEvents={events} 
+              loading={loading}
+              error={error}
+              isConnected={isCalendarConnected}
+            />
           </div>
           <div className="lg:col-span-1">
             <WorkoutSummary 
