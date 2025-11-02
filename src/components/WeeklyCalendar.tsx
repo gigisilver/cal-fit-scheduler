@@ -12,6 +12,9 @@ interface TimeSlot {
 
 interface WeeklyCalendarProps {
   calendarEvents?: CalendarEvent[];
+  loading?: boolean;
+  error?: string | null;
+  isConnected?: boolean;
 }
 
 const mockWeekData: TimeSlot[] = [
@@ -71,7 +74,7 @@ const mockWeekData: TimeSlot[] = [
   },
 ];
 
-export const WeeklyCalendar = ({ calendarEvents = [] }: WeeklyCalendarProps) => {
+export const WeeklyCalendar = ({ calendarEvents = [], loading = false, error = null, isConnected = false }: WeeklyCalendarProps) => {
   // Find available workout slots avoiding conflicts
   const findWorkoutSlot = (date: Date, events: { time: string; duration: number }[]): { time: string; duration: number } | undefined => {
     const workoutDuration = 90; // 90 minute workout
@@ -139,13 +142,9 @@ export const WeeklyCalendar = ({ calendarEvents = [] }: WeeklyCalendarProps) => 
     return undefined;
   };
 
-  // Generate week data from actual calendar events or use mock data (only 4 non-consecutive workout days)
+  // Generate week data from actual calendar events
   const generateWeekData = (): TimeSlot[] => {
     const windowStart = new Date();
-    
-    if (calendarEvents.length === 0) {
-      return mockWeekData;
-    }
 
     const allDaysWithSlots = [];
 
@@ -219,8 +218,45 @@ export const WeeklyCalendar = ({ calendarEvents = [] }: WeeklyCalendarProps) => 
         </div>
       </div>
 
-      <div className="overflow-x-auto">
-        <div className="grid grid-cols-7 gap-4 min-w-max">
+      {/* Loading State */}
+      {loading && (
+        <Card className="p-8 text-center">
+          <div className="flex items-center justify-center gap-2 text-muted-foreground">
+            <Clock className="h-5 w-5 animate-spin" />
+            <p>Loading your calendar events...</p>
+          </div>
+        </Card>
+      )}
+
+      {/* Error State */}
+      {!loading && error && (
+        <Card className="p-8 text-center space-y-4">
+          <div className="flex items-center justify-center gap-2 text-destructive">
+            <Calendar className="h-5 w-5" />
+            <p className="font-semibold">Unable to load calendar events</p>
+          </div>
+          <p className="text-sm text-muted-foreground">{error}</p>
+          <p className="text-sm text-muted-foreground">Please try reconnecting your calendar.</p>
+        </Card>
+      )}
+
+      {/* Not Connected State */}
+      {!loading && !error && !isConnected && (
+        <Card className="p-8 text-center space-y-4">
+          <div className="flex items-center justify-center gap-2 text-muted-foreground">
+            <Calendar className="h-5 w-5" />
+            <p className="font-semibold">Connect your calendar to get started</p>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Connect your Google Calendar to see your schedule and get personalized workout recommendations.
+          </p>
+        </Card>
+      )}
+
+      {/* Calendar View */}
+      {!loading && !error && isConnected && (
+        <div className="overflow-x-auto">
+          <div className="grid grid-cols-7 gap-4 min-w-max">
           {weekData.map((slot) => (
             <Card
               key={slot.day}
@@ -289,9 +325,10 @@ export const WeeklyCalendar = ({ calendarEvents = [] }: WeeklyCalendarProps) => 
               })()}
             </div>
           </Card>
-        ))}
-      </div>
-    </div>
+          ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

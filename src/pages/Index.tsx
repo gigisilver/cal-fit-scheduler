@@ -1,12 +1,15 @@
 import { WeeklyCalendar } from "@/components/WeeklyCalendar";
+import { WorkoutSummary } from "@/components/WorkoutSummary";
 import { Dumbbell, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCalendarEvents } from "@/hooks/useCalendarEvents";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 
 const Index = () => {
   const navigate = useNavigate();
-  const { events } = useCalendarEvents(false);
+  const [isConnected, setIsConnected] = useState(false);
+  const { events, loading, error } = useCalendarEvents(isConnected);
 
   return (
     <div className="min-h-screen bg-[var(--gradient-hero)]">
@@ -38,7 +41,19 @@ const Index = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 pb-12 space-y-8">
-        <WeeklyCalendar calendarEvents={events} />
+        <div className="grid gap-8 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <WeeklyCalendar 
+              calendarEvents={events} 
+              loading={loading} 
+              error={error}
+              isConnected={isConnected}
+            />
+          </div>
+          <div>
+            <WorkoutSummary onConnectionChange={setIsConnected} />
+          </div>
+        </div>
       </main>
     </div>
   );
