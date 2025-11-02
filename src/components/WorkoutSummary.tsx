@@ -55,14 +55,6 @@ export const WorkoutSummary = ({ recommendations = [], onConnectionChange }: Wor
   }, [onConnectionChange]);
 
   const handleConnectCalendar = async () => {
-    // Get current user session
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user) {
-      // Redirect to auth page instead of showing error
-      window.location.href = '/auth';
-      return;
-    }
-
     // If already connected, clear the connection first
     if (isConnected) {
       const { error } = await supabase
@@ -96,12 +88,8 @@ export const WorkoutSummary = ({ recommendations = [], onConnectionChange }: Wor
     const redirectUri = `${supabaseUrl}/functions/v1/google-oauth-callback`;
     const scope = 'https://www.googleapis.com/auth/calendar.readonly';
     
-    // Pass user_id and origin in state for the callback
-    const stateData = {
-      user_id: session.user.id,
-      origin: window.location.origin
-    };
-    const state = encodeURIComponent(JSON.stringify(stateData));
+    // Pass the current origin so callback knows where to redirect
+    const state = encodeURIComponent(window.location.origin);
     
     const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
       `client_id=${encodeURIComponent(clientId)}&` +
