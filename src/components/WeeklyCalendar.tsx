@@ -203,7 +203,7 @@ export const WeeklyCalendar = ({ calendarEvents = [] }: WeeklyCalendarProps) => 
               ))}
 
               {slot.recommendedWorkout && (
-                <div className="p-3 rounded-md bg-[var(--gradient-primary)] text-primary-foreground space-y-1 animate-pulse">
+                <div className="p-3 rounded-md bg-accent text-accent-foreground space-y-1 border-2 border-accent">
                   <div className="flex items-center gap-2">
                     <Dumbbell className="h-4 w-4" />
                     <span className="font-semibold text-xs">Recommended</span>

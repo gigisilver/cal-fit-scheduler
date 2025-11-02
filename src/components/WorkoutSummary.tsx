@@ -5,18 +5,18 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
-const recommendations = [
-  { day: "Monday", time: "11:00 AM", duration: "1h 30m" },
-  { day: "Wednesday", time: "1:00 PM", duration: "1h 30m" },
-  { day: "Friday", time: "2:00 PM", duration: "1h 30m" },
-  { day: "Saturday", time: "10:00 AM", duration: "1h 30m" },
-];
+interface WorkoutRecommendation {
+  day: string;
+  time: string;
+  duration: string;
+}
 
 interface WorkoutSummaryProps {
+  recommendations?: WorkoutRecommendation[];
   onConnectionChange?: (connected: boolean) => void;
 }
 
-export const WorkoutSummary = ({ onConnectionChange }: WorkoutSummaryProps) => {
+export const WorkoutSummary = ({ recommendations = [], onConnectionChange }: WorkoutSummaryProps) => {
   const [isConnecting, setIsConnecting] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
 
@@ -110,7 +110,7 @@ export const WorkoutSummary = ({ onConnectionChange }: WorkoutSummaryProps) => {
         <div className="space-y-1">
           <h3 className="text-lg font-bold">Weekly Workout Plan</h3>
           <p className="text-sm text-muted-foreground">
-            4 sessions • 6 hours total
+            {recommendations.length} sessions • {(recommendations.length * 1.5).toFixed(1)} hours total
           </p>
         </div>
         <div className="flex items-center gap-2 text-primary">
@@ -120,25 +120,31 @@ export const WorkoutSummary = ({ onConnectionChange }: WorkoutSummaryProps) => {
       </div>
 
       <div className="space-y-3">
-        {recommendations.map((rec, idx) => (
-          <div
-            key={idx}
-            className="flex items-center justify-between p-3 rounded-lg bg-secondary hover:bg-secondary/80 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm">
-                {idx + 1}
+        {recommendations.length > 0 ? (
+          recommendations.map((rec, idx) => (
+            <div
+              key={idx}
+              className="flex items-center justify-between p-3 rounded-lg bg-secondary hover:bg-secondary/80 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm">
+                  {idx + 1}
+                </div>
+                <div>
+                  <div className="font-medium">{rec.day}</div>
+                  <div className="text-sm text-muted-foreground">{rec.time}</div>
+                </div>
               </div>
-              <div>
-                <div className="font-medium">{rec.day}</div>
-                <div className="text-sm text-muted-foreground">{rec.time}</div>
+              <div className="text-sm font-medium text-muted-foreground">
+                {rec.duration}
               </div>
             </div>
-            <div className="text-sm font-medium text-muted-foreground">
-              {rec.duration}
-            </div>
+          ))
+        ) : (
+          <div className="text-center text-muted-foreground py-4">
+            Connect your calendar to see personalized recommendations
           </div>
-        ))}
+        )}
       </div>
 
       <div className="pt-4 border-t space-y-4">

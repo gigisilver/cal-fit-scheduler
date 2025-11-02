@@ -2,12 +2,92 @@ import { WeeklyCalendar } from "@/components/WeeklyCalendar";
 import { WorkoutSummary } from "@/components/WorkoutSummary";
 import { Dumbbell } from "lucide-react";
 import heroImage from "@/assets/hero-gym.jpg";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useCalendarEvents } from "@/hooks/useCalendarEvents";
+import { format, parseISO, addDays, differenceInMinutes } from "date-fns";
 
 const Index = () => {
   const [isCalendarConnected, setIsCalendarConnected] = useState(false);
   const { events } = useCalendarEvents(isCalendarConnected);
+
+  // Calculate workout recommendations from calendar events
+  const recommendations = useMemo(() => {
+    if (!events || events.length === 0) return [];
+
+    const findWorkoutSlot = (date: Date, dayEvents: { time: string; duration: number }[]): { time: string; duration: number } | undefined => {
+      const workoutDuration = 90;
+      const preferredSlots = [
+        { start: 6, end: 9 },
+        { start: 11, end: 14 },
+        { start: 16, end: 19 },
+      ];
+
+      const busyBlocks = dayEvents.map(e => {
+        const [hours, minutes] = e.time.split(':').map(Number);
+        const startMinutes = hours * 60 + minutes;
+        return { start: startMinutes, end: startMinutes + e.duration };
+      });
+
+      for (const slot of preferredSlots) {
+        const slotStart = slot.start * 60;
+        const slotEnd = slot.end * 60;
+        
+        for (let time = slotStart; time <= slotEnd - workoutDuration; time += 30) {
+          const workoutEnd = time + workoutDuration;
+          const hasConflict = busyBlocks.some(block => 
+            (time >= block.start && time < block.end) ||
+            (workoutEnd > block.start && workoutEnd <= block.end) ||
+            (time <= block.start && workoutEnd >= block.end)
+          );
+          
+          if (!hasConflict) {
+            const hours = Math.floor(time / 60);
+            const minutes = time % 60;
+            return {
+              time: `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`,
+              duration: workoutDuration,
+            };
+          }
+        }
+      }
+      return undefined;
+    };
+
+    const windowStart = new Date();
+    const recs = [];
+
+    for (let i = 0; i < 7; i++) {
+      const date = addDays(windowStart, i);
+      const dayEvents = events
+        .filter(event => {
+          if (!event.start) return false;
+          const eventDate = parseISO(event.start);
+          return format(eventDate, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd');
+        })
+        .map(event => {
+          const start = parseISO(event.start);
+          const end = event.end ? parseISO(event.end) : start;
+          return {
+            time: format(start, 'HH:mm'),
+            duration: differenceInMinutes(end, start),
+          };
+        });
+
+      const workoutSlot = findWorkoutSlot(date, dayEvents);
+      if (workoutSlot) {
+        const [hours, minutes] = workoutSlot.time.split(':').map(Number);
+        const period = hours >= 12 ? 'PM' : 'AM';
+        const displayHours = hours > 12 ? hours - 12 : hours === 0 ? 12 : hours;
+        recs.push({
+          day: format(date, 'EEEE'),
+          time: `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`,
+          duration: '1h 30m',
+        });
+      }
+    }
+
+    return recs;
+  }, [events]);
 
   return (
     <div className="min-h-screen bg-[var(--gradient-hero)]">
@@ -52,7 +132,10 @@ const Index = () => {
             <WeeklyCalendar calendarEvents={events} />
           </div>
           <div className="lg:col-span-1">
-            <WorkoutSummary onConnectionChange={setIsCalendarConnected} />
+            <WorkoutSummary 
+              recommendations={recommendations}
+              onConnectionChange={setIsCalendarConnected} 
+            />
           </div>
         </div>
 
