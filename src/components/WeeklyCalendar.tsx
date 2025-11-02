@@ -192,6 +192,20 @@ export const WeeklyCalendar = ({ calendarEvents = [] }: WeeklyCalendarProps) => 
 
             <div className="space-y-2">
               {(() => {
+                // Convert 12-hour time to minutes for sorting
+                const timeToMinutes = (time: string) => {
+                  const match = time.match(/(\d+):(\d+)\s*(AM|PM)/i);
+                  if (!match) return 0;
+                  let hours = parseInt(match[1]);
+                  const minutes = parseInt(match[2]);
+                  const period = match[3].toUpperCase();
+                  
+                  if (period === 'PM' && hours !== 12) hours += 12;
+                  if (period === 'AM' && hours === 12) hours = 0;
+                  
+                  return hours * 60 + minutes;
+                };
+
                 // Merge events and workout recommendation, then sort by time
                 const allItems = [
                   ...slot.events.map(e => ({ ...e, isWorkout: false })),
@@ -201,7 +215,7 @@ export const WeeklyCalendar = ({ calendarEvents = [] }: WeeklyCalendarProps) => 
                     duration: slot.recommendedWorkout.duration,
                     isWorkout: true 
                   }] : [])
-                ].sort((a, b) => a.time.localeCompare(b.time));
+                ].sort((a, b) => timeToMinutes(a.time) - timeToMinutes(b.time));
 
                 return allItems.map((item, idx) => 
                   item.isWorkout ? (
