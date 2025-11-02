@@ -93,21 +93,33 @@ export const WeeklyCalendar = ({ calendarEvents = [] }: WeeklyCalendarProps) => 
     const slotEnd = preferredEndHour * 60;
 
     // Convert events to time blocks (in minutes from midnight)
-    const busyBlocks = events.map(e => {
-      const [hours, minutes] = e.time.split(':').map(Number);
-      const startMinutes = hours * 60 + minutes;
-      return {
-        start: startMinutes,
-        end: startMinutes + e.duration,
-      };
-    });
+    const parseToMinutes = (t: string) => {
+      const match = t.match(/(\d+):(\d+)\s*(AM|PM)/i);
+      if (!match) return null;
+      let hours = parseInt(match[1]);
+      const minutes = parseInt(match[2]);
+      const period = match[3].toUpperCase();
+      if (period === 'PM' && hours !== 12) hours += 12;
+      if (period === 'AM' && hours === 12) hours = 0;
+      return hours * 60 + minutes;
+    };
+
+    const busyBlocks = events
+      .map(e => {
+        const m = parseToMinutes(e.time);
+        if (m === null) return null;
+        return {
+          start: m,
+          end: m + e.duration,
+        };
+      })
+      .filter((b): b is { start: number; end: number } => b !== null);
 
     // Try to find a slot within user's preferred time window
     for (let time = slotStart; time <= slotEnd - workoutDuration; time += 30) {
       const workoutEnd = time + workoutDuration;
       
-      // Check if workout overlaps with any event
-      // Overlap occurs if: workout starts before event ends AND workout ends after event starts
+      // Check if workout overlaps with any event (proper interval overlap)
       const hasConflict = busyBlocks.some(block => 
         time < block.end && workoutEnd > block.start
       );
