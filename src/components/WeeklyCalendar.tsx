@@ -110,8 +110,10 @@ export const WeeklyCalendar = ({ calendarEvents = [] }: WeeklyCalendarProps) => 
         if (!hasConflict) {
           const hours = Math.floor(time / 60);
           const minutes = time % 60;
+          const period = hours >= 12 ? 'PM' : 'AM';
+          const displayHours = hours % 12 || 12;
           return {
-            time: `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`,
+            time: `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`,
             duration: workoutDuration,
           };
         }
@@ -141,7 +143,7 @@ export const WeeklyCalendar = ({ calendarEvents = [] }: WeeklyCalendarProps) => 
           const start = parseISO(event.start);
           const end = event.end ? parseISO(event.end) : start;
           return {
-            time: format(start, 'HH:mm'),
+            time: format(start, 'h:mm a'),
             title: event.summary || 'Untitled Event',
             duration: differenceInMinutes(end, start),
           };
