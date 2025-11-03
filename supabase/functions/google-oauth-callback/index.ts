@@ -161,31 +161,12 @@ Deno.serve(async (req) => {
 
     console.log('Successfully stored calendar connection for user:', userId);
 
-    // Generate a magic link for auto-login
-    const { data: sessionData, error: sessionError } = await supabase.auth.admin.generateLink({
-      type: 'magiclink',
-      email: userInfo.email,
-    });
-
-    if (sessionError || !sessionData?.properties?.action_link) {
-      console.error('Session generation error:', sessionError);
-      // Fallback: just redirect with success message
-      return new Response(null, {
-        status: 302,
-        headers: {
-          ...corsHeaders,
-          'Location': `${redirectOrigin}/?calendar_connected=true`,
-        },
-      });
-    }
-
-    // Redirect to magic link which will log the user in
-    console.log('Redirecting to magic link for auto-login');
+    // Redirect back to app with success
     return new Response(null, {
       status: 302,
       headers: {
         ...corsHeaders,
-        'Location': sessionData.properties.action_link,
+        'Location': `${redirectOrigin}/?calendar_connected=true&user_email=${encodeURIComponent(userInfo.email)}`,
       },
     });
 

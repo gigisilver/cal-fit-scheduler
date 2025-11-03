@@ -42,13 +42,23 @@ export const WorkoutSummary = ({ recommendations = [], onConnectionChange }: Wor
     // Check for successful connection callback
     const params = new URLSearchParams(window.location.search);
     if (params.get('calendar_connected') === 'true') {
+      const userEmail = params.get('user_email');
       const connected = true;
       setIsConnected(connected);
       onConnectionChange?.(connected);
-      toast({
-        title: "Calendar connected!",
-        description: "Your Google Calendar has been successfully linked.",
-      });
+      
+      if (userEmail) {
+        toast({
+          title: "Calendar connected!",
+          description: `Your Google Calendar has been linked. You can now sign in with ${decodeURIComponent(userEmail)} to view your schedule.`,
+        });
+      } else {
+        toast({
+          title: "Calendar connected!",
+          description: "Your Google Calendar has been successfully linked.",
+        });
+      }
+      
       // Clean up URL
       window.history.replaceState({}, '', window.location.pathname);
     }
