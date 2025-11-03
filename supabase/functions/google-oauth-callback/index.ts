@@ -120,11 +120,11 @@ Deno.serve(async (req) => {
     let userId: string | null = null;
 
     if (authError) {
-      // User might already exist
-      if (authError.message.includes('already registered')) {
+      // User might already exist - check for email_exists code or "already registered" message
+      if (authError.code === 'email_exists' || authError.message.includes('already registered')) {
         console.log('User already exists, finding user...');
-        const { data: users } = await supabase.auth.admin.listUsers();
-        const existingUser = users.users.find(u => u.email === userInfo.email);
+        const { data: { users } } = await supabase.auth.admin.listUsers();
+        const existingUser = users.find(u => u.email === userInfo.email);
         userId = existingUser?.id || null;
       } else {
         console.error('Auth error:', authError);
