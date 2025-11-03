@@ -161,14 +161,20 @@ Deno.serve(async (req) => {
 
     console.log('Successfully stored calendar connection for user:', userId);
 
-    // Redirect back to app with success
-    return new Response(null, {
-      status: 302,
-      headers: {
-        ...corsHeaders,
-        'Location': `${redirectOrigin}/?calendar_connected=true&user_email=${encodeURIComponent(userInfo.email)}`,
-      },
+    // Generate access link for the user
+    const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
+      type: 'magiclink',
+      email: userInfo.email,
     });
+
+    if (linkError || !linkData?.properties?.hashed_token) {
+      console.error('Link generation error:', linkError);
+      return Response.redirect(`${redirectOrigin}/?error=session_failed`);
+    }
+
+    // Extract tokens from the hashed_token
+    // For now, redirect back and let the frontend handle sign-in
+    return Response.redirect(`${redirectOrigin}/?calendar_connected=true&email=${encodeURIComponent(userInfo.email)}`);
 
   } catch (error) {
     console.error('Error in OAuth callback:', error);

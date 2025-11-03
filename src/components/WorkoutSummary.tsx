@@ -42,25 +42,33 @@ export const WorkoutSummary = ({ recommendations = [], onConnectionChange }: Wor
     // Check for successful connection callback
     const params = new URLSearchParams(window.location.search);
     if (params.get('calendar_connected') === 'true') {
-      const userEmail = params.get('user_email');
-      const connected = true;
-      setIsConnected(connected);
-      onConnectionChange?.(connected);
+      const email = params.get('email');
       
-      if (userEmail) {
-        toast({
-          title: "Calendar connected!",
-          description: `Your Google Calendar has been linked. You can now sign in with ${decodeURIComponent(userEmail)} to view your schedule.`,
-        });
-      } else {
-        toast({
-          title: "Calendar connected!",
-          description: "Your Google Calendar has been successfully linked.",
+      if (email) {
+        // Sign in with OTP to the email
+        supabase.auth.signInWithOtp({
+          email: decodeURIComponent(email),
+          options: {
+            shouldCreateUser: false,
+          }
+        }).then(({ error }) => {
+          if (error) {
+            console.error('Sign in error:', error);
+            toast({
+              title: "Calendar connected!",
+              description: "Your calendar is connected. Please check your email to complete sign in.",
+            });
+          } else {
+            toast({
+              title: "Check your email",
+              description: "We've sent you a sign-in link to access your calendar.",
+            });
+          }
+          setIsConnected(true);
+          onConnectionChange?.(true);
+          window.history.replaceState({}, '', window.location.pathname);
         });
       }
-      
-      // Clean up URL
-      window.history.replaceState({}, '', window.location.pathname);
     }
   }, [onConnectionChange]);
 
@@ -114,8 +122,8 @@ export const WorkoutSummary = ({ recommendations = [], onConnectionChange }: Wor
       `prompt=consent&` +
       `state=${state}`;
     
-    // Open in new window to avoid iframe restrictions
-    window.open(authUrl, '_blank', 'width=500,height=600');
+    // Redirect in the same window
+    window.location.href = authUrl;
   };
 
   return (
