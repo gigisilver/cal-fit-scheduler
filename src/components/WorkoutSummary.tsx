@@ -2,6 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar, CheckCircle2, TrendingUp } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -19,6 +20,7 @@ interface WorkoutSummaryProps {
 export const WorkoutSummary = ({ recommendations = [], onConnectionChange }: WorkoutSummaryProps) => {
   const [isConnecting, setIsConnecting] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Check if calendar is already connected
@@ -81,10 +83,20 @@ export const WorkoutSummary = ({ recommendations = [], onConnectionChange }: Wor
       return;
     }
     
-    setIsConnecting(true);
-    
     // Try to get session for user context
     const { data: { session } } = await supabase.auth.getSession();
+
+    if (!session) {
+      toast({
+        title: "Authentication required",
+        description: "Please log in first to connect your calendar.",
+        variant: "destructive",
+      });
+      navigate('/auth');
+      return;
+    }
+    
+    setIsConnecting(true);
     
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '527176247821-hgkc2991uhmgkm1vt7dmqm5qvco3lslb.apps.googleusercontent.com';
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -94,7 +106,7 @@ export const WorkoutSummary = ({ recommendations = [], onConnectionChange }: Wor
     // Pass both origin and access token in state (if available)
     const stateData = {
       origin: window.location.origin,
-      accessToken: session?.access_token || null
+      accessToken: session.access_token
     };
     const state = encodeURIComponent(JSON.stringify(stateData));
     
