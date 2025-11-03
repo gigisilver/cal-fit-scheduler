@@ -85,47 +85,107 @@ Deno.serve(async (req) => {
     const tokens = await tokenResponse.json();
     console.log('Successfully obtained tokens');
 
+    if (!tokens.access_token) {
+      console.error('No access token in response');
+      throw new Error('No access token received');
+    }
+
+    // Get user info from Google
+    const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+      headers: { Authorization: `Bearer ${tokens.access_token}` },
+    });
+
+    if (!userInfoResponse.ok) {
+      console.error('Failed to get user info from Google');
+      throw new Error('Failed to get user info');
+    }
+
+    const userInfo = await userInfoResponse.json();
+    console.log('Got user info:', { email: userInfo.email });
+
+    // Create Supabase client
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Sign in or create user with Supabase using Google email
+    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      email: userInfo.email,
+      email_confirm: true,
+      user_metadata: {
+        name: userInfo.name,
+        avatar_url: userInfo.picture,
+        google_id: userInfo.id,
+      },
+    });
+
+    let userId: string | null = null;
+
+    if (authError) {
+      // User might already exist
+      if (authError.message.includes('already registered')) {
+        console.log('User already exists, finding user...');
+        const { data: users } = await supabase.auth.admin.listUsers();
+        const existingUser = users.users.find(u => u.email === userInfo.email);
+        userId = existingUser?.id || null;
+      } else {
+        console.error('Auth error:', authError);
+        throw new Error('Authentication failed');
+      }
+    } else {
+      userId = authData?.user?.id || null;
+    }
+
+    if (!userId) {
+      console.error('Could not get user ID');
+      throw new Error('User ID not found');
+    }
+
     // Calculate token expiry time
     const expiresIn = tokens.expires_in || 3600;
     const tokenExpiry = new Date(Date.now() + expiresIn * 1000).toISOString();
 
-    // Store tokens in database with user context
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    
-    // Get user ID from the access token if provided
-    let userId = null;
-    if (userAccessToken) {
-      const { data: { user } } = await supabase.auth.getUser(userAccessToken);
-      userId = user?.id;
-    }
-    
-    if (!userId) {
-      console.error('No user ID available');
-      throw new Error('User authentication required');
-    }
-    
+    // Store calendar tokens
     const { error: dbError } = await supabase
       .from('google_calendar_connection')
-      .insert({
-        access_token: tokens.access_token,
-        refresh_token: tokens.refresh_token,
-        token_expiry: tokenExpiry,
+      .upsert({
         user_id: userId,
-      });
+        access_token: tokens.access_token,
+        refresh_token: tokens.refresh_token || '',
+        token_expiry: tokenExpiry,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id' });
 
     if (dbError) {
       console.error('Database error:', dbError);
-      throw new Error('Failed to store tokens');
+      throw new Error('Failed to store calendar connection');
     }
 
-    console.log('Tokens stored successfully');
+    console.log('Successfully stored calendar connection for user:', userId);
 
-    // Redirect back to the app with success
+    // Generate a magic link for auto-login
+    const { data: sessionData, error: sessionError } = await supabase.auth.admin.generateLink({
+      type: 'magiclink',
+      email: userInfo.email,
+    });
+
+    if (sessionError || !sessionData?.properties?.action_link) {
+      console.error('Session generation error:', sessionError);
+      // Fallback: just redirect with success message
+      return new Response(null, {
+        status: 302,
+        headers: {
+          ...corsHeaders,
+          'Location': `${redirectOrigin}/?calendar_connected=true`,
+        },
+      });
+    }
+
+    // Redirect to magic link which will log the user in
+    console.log('Redirecting to magic link for auto-login');
     return new Response(null, {
       status: 302,
       headers: {
         ...corsHeaders,
-        'Location': `${redirectOrigin}/?calendar_connected=true`,
+        'Location': sessionData.properties.action_link,
       },
     });
 

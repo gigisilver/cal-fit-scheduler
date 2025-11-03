@@ -127,9 +127,6 @@ const Index = () => {
                 <p className="text-sm text-muted-foreground">Smart workout scheduling</p>
               </div>
             </div>
-            <div>
-              <Button variant="secondary" onClick={() => navigate("/auth")}>Log in / Sign up</Button>
-            </div>
           </div>
         </div>
       </header>
