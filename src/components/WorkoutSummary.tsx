@@ -35,31 +35,13 @@ export const WorkoutSummary = ({ recommendations = [], onConnectionChange }: Wor
       setUserEmail(session?.user?.email || null);
     });
 
-    // Check if calendar is already connected and get user info
-    const checkConnection = async () => {
-      // First check if there's a connection
-      const { data, error } = await supabase
-        .from('google_calendar_connection')
-        .select('id, user_id')
-        .limit(1)
-        .maybeSingle();
-
-      if (error) {
-        console.warn('Calendar connection check error:', error.message);
-      }
-      
-      const connected = !!data;
-      setIsConnected(connected);
-      onConnectionChange?.(connected);
-      
-      // If connected, try to get the user's email from auth
-      if (connected && data?.user_id) {
-        const { data: { user } } = await supabase.auth.admin?.getUserById?.(data.user_id) || {};
-        // For now, we'll get it from the message or localStorage
-        const storedEmail = localStorage.getItem('connected_calendar_email');
-        if (storedEmail) {
-          setConnectedEmail(storedEmail);
-        }
+    // Check if calendar is already connected using localStorage
+    const checkConnection = () => {
+      const storedEmail = localStorage.getItem('connected_calendar_email');
+      if (storedEmail) {
+        setConnectedEmail(storedEmail);
+        setIsConnected(true);
+        onConnectionChange?.(true);
       }
     };
     checkConnection();
@@ -107,8 +89,7 @@ export const WorkoutSummary = ({ recommendations = [], onConnectionChange }: Wor
           title: "Calendar connected!",
           description: email ? `Connected to ${email}` : "Your Google Calendar has been successfully linked.",
         });
-        // Refetch to get the latest data
-        checkConnection();
+        // No need to refetch - state is already updated
       }
     };
     window.addEventListener('message', handleMessage);
