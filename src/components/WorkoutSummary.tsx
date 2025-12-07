@@ -140,15 +140,12 @@ export const WorkoutSummary = ({ recommendations = [], onConnectionChange }: Wor
     // Debug logging
     console.log('=== Google OAuth Debug ===');
     console.log('Client ID:', clientId);
-    console.log('Supabase URL:', supabaseUrl);
     console.log('Redirect URI:', redirectUri);
-    console.log('Scope:', scope);
-    console.log('State:', stateData);
     console.log('Full Auth URL:', authUrl);
     console.log('=========================');
     
-    // Redirect in the same window
-    window.location.href = authUrl;
+    // Open in a new window to avoid iframe restrictions in Lovable preview
+    window.open(authUrl, '_blank', 'width=500,height=600,menubar=no,toolbar=no');
   };
 
   return (
