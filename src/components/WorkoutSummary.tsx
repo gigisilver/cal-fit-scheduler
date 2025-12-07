@@ -19,8 +19,21 @@ interface WorkoutSummaryProps {
 export const WorkoutSummary = ({ recommendations = [], onConnectionChange }: WorkoutSummaryProps) => {
   const [isConnecting, setIsConnecting] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
 
   useEffect(() => {
+    // Check current auth state
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUserEmail(user?.email || null);
+    };
+    checkAuth();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      setUserEmail(session?.user?.email || null);
+    });
+
     // Check if calendar is already connected
     const checkConnection = async () => {
       const { data, error } = await supabase
@@ -38,6 +51,8 @@ export const WorkoutSummary = ({ recommendations = [], onConnectionChange }: Wor
       onConnectionChange?.(connected);
     };
     checkConnection();
+
+    return () => subscription.unsubscribe();
 
     // Check for successful connection callback
     const params = new URLSearchParams(window.location.search);
@@ -176,6 +191,18 @@ export const WorkoutSummary = ({ recommendations = [], onConnectionChange }: Wor
             No consecutive workout days • Perfect spacing
           </span>
         </div>
+
+        {userEmail && !isConnected && (
+          <div className="flex items-center gap-2 text-sm bg-secondary/50 p-3 rounded-lg">
+            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm uppercase">
+              {userEmail.charAt(0)}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-muted-foreground">Signed in as</p>
+              <p className="font-medium truncate">{userEmail}</p>
+            </div>
+          </div>
+        )}
 
         <Button 
           variant="hero" 
