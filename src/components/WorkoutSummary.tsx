@@ -52,39 +52,51 @@ export const WorkoutSummary = ({ recommendations = [], onConnectionChange }: Wor
     };
     checkConnection();
 
-    return () => subscription.unsubscribe();
-
-    // Check for successful connection callback
+    // Check for successful connection callback (this runs in popup window)
     const params = new URLSearchParams(window.location.search);
     if (params.get('calendar_connected') === 'true') {
       const email = params.get('email');
+      console.log('Calendar connected callback received:', { email });
       
+      // Notify parent window if we're in a popup
+      if (window.opener) {
+        window.opener.postMessage({ type: 'CALENDAR_CONNECTED', email }, '*');
+        window.close();
+        return;
+      }
+      
+      // If not in popup (direct navigation), handle normally
       if (email) {
-        // Sign in with OTP to the email
-        supabase.auth.signInWithOtp({
-          email: decodeURIComponent(email),
-          options: {
-            shouldCreateUser: false,
-          }
-        }).then(({ error }) => {
-          if (error) {
-            console.error('Sign in error:', error);
-            toast({
-              title: "Calendar connected!",
-              description: "Your calendar is connected. Please check your email to complete sign in.",
-            });
-          } else {
-            toast({
-              title: "Check your email",
-              description: "We've sent you a sign-in link to access your calendar.",
-            });
-          }
-          setIsConnected(true);
-          onConnectionChange?.(true);
-          window.history.replaceState({}, '', window.location.pathname);
+        setIsConnected(true);
+        onConnectionChange?.(true);
+        toast({
+          title: "Calendar connected!",
+          description: "Your Google Calendar has been successfully linked.",
         });
+        window.history.replaceState({}, '', window.location.pathname);
       }
     }
+
+    // Listen for messages from popup window
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'CALENDAR_CONNECTED') {
+        console.log('Received calendar connected message from popup');
+        setIsConnected(true);
+        onConnectionChange?.(true);
+        toast({
+          title: "Calendar connected!",
+          description: "Your Google Calendar has been successfully linked.",
+        });
+        // Refetch to get the latest data
+        checkConnection();
+      }
+    };
+    window.addEventListener('message', handleMessage);
+
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener('message', handleMessage);
+    };
   }, [onConnectionChange]);
 
   const handleConnectCalendar = async () => {
