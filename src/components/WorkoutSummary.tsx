@@ -19,6 +19,7 @@ interface WorkoutSummaryProps {
 export const WorkoutSummary = ({ recommendations = [], onConnectionChange }: WorkoutSummaryProps) => {
   const [isConnecting, setIsConnecting] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
+  const [connectedEmail, setConnectedEmail] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
 
   useEffect(() => {
@@ -34,11 +35,12 @@ export const WorkoutSummary = ({ recommendations = [], onConnectionChange }: Wor
       setUserEmail(session?.user?.email || null);
     });
 
-    // Check if calendar is already connected
+    // Check if calendar is already connected and get user info
     const checkConnection = async () => {
+      // First check if there's a connection
       const { data, error } = await supabase
         .from('google_calendar_connection')
-        .select('id')
+        .select('id, user_id')
         .limit(1)
         .maybeSingle();
 
@@ -49,6 +51,16 @@ export const WorkoutSummary = ({ recommendations = [], onConnectionChange }: Wor
       const connected = !!data;
       setIsConnected(connected);
       onConnectionChange?.(connected);
+      
+      // If connected, try to get the user's email from auth
+      if (connected && data?.user_id) {
+        const { data: { user } } = await supabase.auth.admin?.getUserById?.(data.user_id) || {};
+        // For now, we'll get it from the message or localStorage
+        const storedEmail = localStorage.getItem('connected_calendar_email');
+        if (storedEmail) {
+          setConnectedEmail(storedEmail);
+        }
+      }
     };
     checkConnection();
 
@@ -67,11 +79,14 @@ export const WorkoutSummary = ({ recommendations = [], onConnectionChange }: Wor
       
       // If not in popup (direct navigation), handle normally
       if (email) {
+        const decodedEmail = decodeURIComponent(email);
+        setConnectedEmail(decodedEmail);
+        localStorage.setItem('connected_calendar_email', decodedEmail);
         setIsConnected(true);
         onConnectionChange?.(true);
         toast({
           title: "Calendar connected!",
-          description: "Your Google Calendar has been successfully linked.",
+          description: `Connected to ${decodedEmail}`,
         });
         window.history.replaceState({}, '', window.location.pathname);
       }
@@ -80,12 +95,17 @@ export const WorkoutSummary = ({ recommendations = [], onConnectionChange }: Wor
     // Listen for messages from popup window
     const handleMessage = (event: MessageEvent) => {
       if (event.data?.type === 'CALENDAR_CONNECTED') {
-        console.log('Received calendar connected message from popup');
+        console.log('Received calendar connected message from popup:', event.data.email);
+        const email = event.data.email ? decodeURIComponent(event.data.email) : null;
+        if (email) {
+          setConnectedEmail(email);
+          localStorage.setItem('connected_calendar_email', email);
+        }
         setIsConnected(true);
         onConnectionChange?.(true);
         toast({
           title: "Calendar connected!",
-          description: "Your Google Calendar has been successfully linked.",
+          description: email ? `Connected to ${email}` : "Your Google Calendar has been successfully linked.",
         });
         // Refetch to get the latest data
         checkConnection();
@@ -118,6 +138,8 @@ export const WorkoutSummary = ({ recommendations = [], onConnectionChange }: Wor
       }
       
       setIsConnected(false);
+      setConnectedEmail(null);
+      localStorage.removeItem('connected_calendar_email');
       onConnectionChange?.(false);
       toast({
         title: "Calendar disconnected",
@@ -231,15 +253,31 @@ export const WorkoutSummary = ({ recommendations = [], onConnectionChange }: Wor
           </div>
         )}
 
+        {isConnected && connectedEmail && (
+          <div className="flex items-center gap-2 text-sm bg-primary/10 p-3 rounded-lg">
+            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-semibold text-sm uppercase">
+              {connectedEmail.charAt(0)}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-muted-foreground">Connected as</p>
+              <p className="font-medium truncate text-primary">{connectedEmail}</p>
+            </div>
+          </div>
+        )}
+
         <Button 
-          variant="hero" 
+          variant={isConnected ? "outline" : "hero"}
           className="w-full" 
           size="lg"
           onClick={handleConnectCalendar}
           disabled={isConnecting}
         >
           <Calendar className="h-4 w-4" />
-          {isConnected ? 'Disconnect Calendar' : isConnecting ? 'Connecting...' : 'Connect Google Calendar'}
+          {isConnected 
+            ? 'Disconnect Calendar' 
+            : isConnecting 
+              ? 'Connecting...' 
+              : 'Connect Google Calendar'}
         </Button>
       </div>
     </Card>
