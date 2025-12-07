@@ -192,15 +192,23 @@ export const WorkoutSummary = ({ recommendations = [], onConnectionChange }: Wor
           </span>
         </div>
 
-        {userEmail && !isConnected && (
+        {!isConnected && (
           <div className="flex items-center gap-2 text-sm bg-secondary/50 p-3 rounded-lg">
-            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm uppercase">
-              {userEmail.charAt(0)}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs text-muted-foreground">Signed in as</p>
-              <p className="font-medium truncate">{userEmail}</p>
-            </div>
+            {userEmail ? (
+              <>
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm uppercase">
+                  {userEmail.charAt(0)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-muted-foreground">Signed in as</p>
+                  <p className="font-medium truncate">{userEmail}</p>
+                </div>
+              </>
+            ) : (
+              <p className="text-muted-foreground text-center w-full">
+                You'll choose your Google account in the next step
+              </p>
+            )}
           </div>
         )}
 
